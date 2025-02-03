@@ -1,0 +1,79 @@
+#importando as bibliotecas necessárias
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Definição de parâmetros do modelo - parâmetros aleatórios inseridos. O modelo final depende do processo de calibragem e estimação. 
+T = 50  # Número de períodos (trimestres)
+alpha_1 = 0.6  # Propensão marginal a consumir da renda
+alpha_2 = 0.4  # Propensão marginal a consumir da riqueza
+gamma_1 = 0.02  # Investimento em função do estoque de capital
+gamma_2 = 0.3  # Investimento baseado no crescimento do PIB
+r = 0.04  # Taxa de juros fixa pelo Banco Central
+
+# Inicialização das variáveis ao longo do tempo
+time = np.arange(T)
+Y = np.zeros(T)  # PIB
+C = np.zeros(T)  # Consumo
+I = np.zeros(T)  # Investimento
+G = np.ones(T) * 100  # Gastos do governo (constantes)
+T_gov = np.zeros(T)  # Impostos
+B = np.zeros(T)  # Dívida pública
+L = np.zeros(T)  # Empréstimos totais
+D = np.zeros(T)  # Depósitos das famílias
+W = np.zeros(T)  # Salários
+Pi = np.zeros(T)  # Lucros das empresas
+
+# Condições iniciais
+Y[0] = 500  # PIB inicial
+B[0] = 200  # Dívida pública inicial
+D[0] = 300  # Depósitos iniciais
+L[0] = 100  # Empréstimos iniciais
+W[0] = 0.6 * Y[0]  # Salários iniciais
+
+# Simulação ao longo do tempo
+for t in range(1, T):
+    # Renda disponível das famílias
+    Y_d = W[t-1] - T_gov[t-1] + r * B[t-1] - r * L[t-1]
+    
+    # Consumo das famílias
+    C[t] = alpha_1 * Y_d + alpha_2 * D[t-1]
+    
+    # Investimento das empresas
+    I[t] = gamma_1 * (Y[t-1] * 3) + gamma_2 * (Y[t-1] - Y[t-2] if t > 1 else 0)
+    
+    # PIB
+    Y[t] = C[t] + I[t] + G[t]
+    
+    # Salários pagos pelas empresas
+    W[t] = 0.6 * Y[t]
+    
+    # Lucros das empresas
+    Pi[t] = Y[t] - W[t] - r * L[t-1]
+    
+    # Impostos arrecadados pelo governo
+    T_gov[t] = 0.2 * Y[t]
+    
+    # Déficit do governo
+    DEF = G[t] + r * B[t-1] - T_gov[t]
+    
+    # Variação da dívida pública
+    B[t] = B[t-1] + DEF
+    
+    # Variação dos empréstimos bancários
+    L[t] = L[t-1] + (I[t] - Pi[t])
+    
+    # Variação dos depósitos das famílias
+    D[t] = D[t-1] + (Y_d - C[t] - (B[t] - B[t-1]))
+
+# Plotando os resultados
+plt.figure(figsize=(12, 6))
+plt.plot(time, Y, label='PIB', linewidth=2)
+plt.plot(time, C, label='Consumo', linestyle='--')
+plt.plot(time, I, label='Investimento', linestyle='-.')
+plt.plot(time, G, label='Gasto do Governo', linestyle=':')
+plt.xlabel('Trimestres')
+plt.ylabel('Valores Monetários')
+plt.legend()
+plt.title('Simulação do Modelo SFC para o Brasil')
+plt.grid()
+plt.show()
